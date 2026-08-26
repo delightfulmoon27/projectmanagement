@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -33,20 +34,14 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#f8f7f5] px-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#584738]">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect x="3" y="3" width="7" height="9" rx="1.5" fill="white" />
-              <rect x="14" y="3" width="7" height="5" rx="1.5" fill="white" fillOpacity="0.7" />
-              <rect x="14" y="12" width="7" height="9" rx="1.5" fill="white" fillOpacity="0.7" />
-              <rect x="3" y="16" width="7" height="5" rx="1.5" fill="white" />
-            </svg>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Project manager"
+            width={48}
+            height={48}
+            className="mb-4 rounded-xl"
+            priority
+          />
           <h1 className="text-xl font-semibold text-black">Project manager</h1>
           <p className="mt-1 text-sm text-black/60">Sign in to continue</p>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { COL_PROJECT, COL_SCORE, COL_STATUS, COL_TASK, STICKY_WIDTH, WEEKS_AFTER, WEEKS_BEFORE, WEEK_WIDTH } from '@/lib/constants';
@@ -156,7 +157,10 @@ export default function Timeline({
   return (
     <div className="flex h-screen flex-col">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 bg-[#584738] px-4 py-3 text-white sm:px-6">
-        <h1 className="text-lg font-semibold text-white">Project manager</h1>
+        <div className="flex items-center gap-2">
+          <Image src="/logo.png" alt="" width={28} height={28} className="rounded-md" />
+          <h1 className="text-lg font-semibold text-white">Project manager</h1>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="mr-1 flex cursor-pointer items-center gap-2 text-sm text-white/85 select-none">
             <input
