@@ -46,7 +46,6 @@ export default function TaskDetailPanel({
   // The panel is remounted (via `key={task.id}` in Timeline) whenever a different
   // task is selected, so this only resyncs local drafts when the *same* task's data
   // changes underneath us (e.g. a realtime update from another device).
-  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setTitle(task.title);
     setStartDate(task.start_date);
@@ -59,7 +58,6 @@ export default function TaskDetailPanel({
     setConfirmingDelete(false);
     setDateError(null);
   }, [task, dependencies]);
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const projectTasks = allTasks.filter((t) => t.project_id === task.project_id && t.id !== task.id);
   const status = getTaskStatus({ ...task, progress, is_dropped: isDropped });
