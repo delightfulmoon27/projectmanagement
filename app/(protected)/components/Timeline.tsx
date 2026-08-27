@@ -5,11 +5,18 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { COL_PROJECT, COL_SCORE, COL_STATUS, COL_TASK, STICKY_WIDTH, WEEKS_AFTER, WEEKS_BEFORE, WEEK_WIDTH } from '@/lib/constants';
-import { generateWeekColumns, groupWeeksByMonth } from '@/lib/dates';
+import {
+  generateWeekColumns,
+  getTimelineFilterRange,
+  groupWeeksByMonth,
+  taskOverlapsRange,
+  type TimelineRangeFilter as RangeOption,
+} from '@/lib/dates';
 import { getTaskStatus, sortTasks } from '@/lib/scoring';
 import type { Project, Task, TaskDependency } from '@/lib/types';
 import GanttRow from './GanttRow';
 import ProjectFilter from './ProjectFilter';
+import TimelineRangeFilter from './TimelineRangeFilter';
 import NewProjectModal from './NewProjectModal';
 import NewTaskModal from './NewTaskModal';
 import ManageProjectsModal from './ManageProjectsModal';
@@ -40,6 +47,7 @@ export default function Timeline({
   const [visibleProjectIds, setVisibleProjectIds] = useState<Set<string>>(
     new Set(initialProjects.map((p) => p.id))
   );
+  const [timelineRangeFilter, setTimelineRangeFilter] = useState<RangeOption>('full');
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
@@ -119,8 +127,15 @@ export default function Timeline({
   // carried by the color dot + Project column on each row.
   const visibleTasks = useMemo(() => {
     const visibleIds = new Set(visibleProjects.map((p) => p.id));
-    return sortTasks(tasks.filter((t) => visibleIds.has(t.project_id)));
-  }, [tasks, visibleProjects]);
+    const range = getTimelineFilterRange(timelineRangeFilter);
+    return sortTasks(
+      tasks.filter(
+        (t) =>
+          visibleIds.has(t.project_id) &&
+          (!range || taskOverlapsRange(t.start_date, t.end_date, range))
+      )
+    );
+  }, [tasks, visibleProjects, timelineRangeFilter]);
 
   const rowsWithDividers = useMemo(() => {
     const groups = visibleTasks.map((task) => {
@@ -215,6 +230,7 @@ export default function Timeline({
       </header>
 
       <ProjectFilter projects={projects} visibleIds={visibleProjectIds} onToggle={toggleProjectVisible} />
+      <TimelineRangeFilter value={timelineRangeFilter} onChange={setTimelineRangeFilter} />
 
       <div className="flex-1 overflow-auto">
         <div style={{ width: STICKY_WIDTH + weeks.length * WEEK_WIDTH, minWidth: '100%' }}>

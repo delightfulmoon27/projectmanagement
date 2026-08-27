@@ -72,6 +72,27 @@ export function groupWeeksByMonth(weeks: WeekColumn[]): MonthGroup[] {
   return groups;
 }
 
+export type TimelineRangeFilter = 'full' | 'week' | 'upcoming';
+
+/** null means no filtering (Full Timeline). "week" is the current Mon-Sun.
+ * "upcoming" is this week plus the next 3 weeks (4 weeks total). */
+export function getTimelineFilterRange(option: TimelineRangeFilter): { start: Date; end: Date } | null {
+  if (option === 'full') return null;
+  const weekStart = startOfWeekMonday(new Date());
+  const weeksSpan = option === 'week' ? 1 : 4;
+  return { start: weekStart, end: addDays(weekStart, weeksSpan * 7 - 1) };
+}
+
+export function taskOverlapsRange(
+  startDate: string,
+  endDate: string,
+  range: { start: Date; end: Date }
+): boolean {
+  const s = parseDate(startDate);
+  const e = parseDate(endDate);
+  return s <= range.end && e >= range.start;
+}
+
 export function diffDays(from: Date, to: Date): number {
   const a = new Date(from);
   a.setHours(0, 0, 0, 0);
