@@ -6,6 +6,7 @@ import { calculateScore, daysRemaining, getTaskStatus } from '@/lib/scoring';
 import type { Project, Task, TaskDependency } from '@/lib/types';
 import PriorityScore from './PriorityScore';
 import StatusBadge from './StatusBadge';
+import TaskChecklist from './TaskChecklist';
 import { useToast } from './Toast';
 
 export default function TaskDetailPanel({
@@ -171,7 +172,7 @@ export default function TaskDetailPanel({
   return (
     <>
       <div className="fixed inset-0 z-40 bg-black/20 animate-fade-in" onClick={onClose} />
-      <div className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col bg-white shadow-2xl animate-slide-in-right">
+      <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-[460px] flex-col bg-white shadow-2xl animate-slide-in-right">
         <div className="flex items-start justify-between border-b border-black/5 px-4 py-4">
           <input
             value={title}
@@ -357,14 +358,16 @@ export default function TaskDetailPanel({
             </label>
           </div>
 
+          <TaskChecklist taskId={task.id} userId={userId} />
+
           <div className="mb-2">
             <label className="mb-1.5 block text-sm font-medium text-black">Note</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               onBlur={handleNoteBlur}
-              rows={4}
-              className="w-full rounded-lg border border-black/15 px-2.5 py-1.5 text-sm outline-none focus:border-[#584738]"
+              rows={6}
+              className="w-full resize-y rounded-lg border border-black/15 px-2.5 py-1.5 text-sm outline-none focus:border-[#584738]"
             />
           </div>
         </div>

@@ -28,6 +28,16 @@ export interface TaskDependency {
   user_id: string;
 }
 
+export interface ChecklistItem {
+  id: string;
+  task_id: string;
+  user_id: string;
+  text: string;
+  done: boolean;
+  position: number;
+  created_at: string;
+}
+
 export type TaskStatus = 'dropped' | 'done' | 'in_progress' | 'not_started';
 
 export const PROJECT_COLORS = [
