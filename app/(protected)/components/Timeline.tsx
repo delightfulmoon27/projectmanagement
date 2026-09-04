@@ -206,7 +206,7 @@ export default function Timeline({
   const nonArchivedProjects = projects.filter((p) => !p.archived);
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex min-h-screen flex-col">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-black/10 bg-[#584738] px-4 py-3 text-white sm:px-6">
         <div className="flex items-center gap-2">
           <Image src="/logo.png" alt="" width={28} height={28} className="rounded-md" />
@@ -277,8 +277,7 @@ export default function Timeline({
       <ProjectFilter projects={projects} visibleIds={projectFilterVisibleIds} onToggle={toggleProjectVisible} />
       <TimelineRangeFilter value={timelineRangeFilter} onChange={setTimelineRangeFilter} />
 
-      <div className="flex-1 overflow-auto">
-        <div style={{ width: STICKY_WIDTH + weeks.length * WEEK_WIDTH, minWidth: '100%' }}>
+      <div style={{ width: STICKY_WIDTH + weeks.length * WEEK_WIDTH, minWidth: '100%' }}>
           {/* Month header */}
           <div className="sticky top-0 z-30 flex border-b border-black/10 bg-[#584738]">
             <div className="sticky left-0 z-30 shrink-0 bg-[#584738]" style={{ width: STICKY_WIDTH }} />
@@ -369,7 +368,6 @@ export default function Timeline({
             );
           })}
         </div>
-      </div>
 
       {newProjectOpen && (
         <NewProjectModal
