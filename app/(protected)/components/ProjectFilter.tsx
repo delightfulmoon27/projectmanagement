@@ -12,7 +12,7 @@ export default function ProjectFilter({
   if (projects.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-black/5 bg-white px-4 py-2.5 sm:px-6">
+    <div className="sticky left-0 flex flex-wrap items-center gap-3 border-b border-black/5 bg-white px-4 py-2.5 sm:px-6">
       <span className="text-xs font-medium uppercase tracking-wide text-black/40">Projects</span>
       {projects.map((p) => (
         <label
