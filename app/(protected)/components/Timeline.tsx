@@ -22,6 +22,8 @@ import NewTaskModal from './NewTaskModal';
 import ManageProjectsModal from './ManageProjectsModal';
 import TaskDetailPanel from './TaskDetailPanel';
 
+const FILTER_STORAGE_KEY = 'pm-timeline-filters-v1';
+
 export default function Timeline({
   userId,
   userEmail,
@@ -43,11 +45,48 @@ export default function Timeline({
   const [dependencies, setDependencies] = useState<TaskDependency[]>(initialDependencies);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Project visibility is tracked as a set of HIDDEN ids (rather than visible ids) so
+  // that a newly created project is visible by default without extra merge logic.
   const [showArchived, setShowArchived] = useState(false);
-  const [visibleProjectIds, setVisibleProjectIds] = useState<Set<string>>(
-    new Set(initialProjects.map((p) => p.id))
-  );
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [hiddenProjectIds, setHiddenProjectIds] = useState<Set<string>>(new Set());
   const [timelineRangeFilter, setTimelineRangeFilter] = useState<RangeOption>('full');
+
+  // Restore the user's last filter selections after mount (skipped during SSR since
+  // localStorage isn't available there, and reading it before mount would cause a
+  // hydration mismatch).
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FILTER_STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved.hiddenProjectIds)) setHiddenProjectIds(new Set(saved.hiddenProjectIds));
+      if (typeof saved.showArchived === 'boolean') setShowArchived(saved.showArchived);
+      if (typeof saved.showCompleted === 'boolean') setShowCompleted(saved.showCompleted);
+      if (saved.timelineRangeFilter === 'full' || saved.timelineRangeFilter === 'week' || saved.timelineRangeFilter === 'upcoming') {
+        setTimelineRangeFilter(saved.timelineRangeFilter);
+      }
+    } catch {
+      // ignore malformed/inaccessible storage
+    }
+  }, []);
+
+  // Persist filter selections whenever they change.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        FILTER_STORAGE_KEY,
+        JSON.stringify({
+          hiddenProjectIds: [...hiddenProjectIds],
+          showArchived,
+          showCompleted,
+          timelineRangeFilter,
+        })
+      );
+    } catch {
+      // ignore storage errors (private browsing, quota, etc.)
+    }
+  }, [hiddenProjectIds, showArchived, showCompleted, timelineRangeFilter]);
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [newProjectOpen, setNewProjectOpen] = useState(false);
@@ -64,16 +103,7 @@ export default function Timeline({
       supabase.from('tasks').select('*').order('created_at', { ascending: true }),
       supabase.from('task_dependencies').select('*'),
     ]);
-    if (p) {
-      setProjects(p);
-      setVisibleProjectIds((prev) => {
-        const next = new Set(prev);
-        p.forEach((proj) => {
-          if (!prev.has(proj.id)) next.add(proj.id);
-        });
-        return next;
-      });
-    }
+    if (p) setProjects(p);
     if (t) setTasks(t);
     if (d) setDependencies(d);
     setRefreshing(false);
@@ -118,8 +148,13 @@ export default function Timeline({
   const visibleProjects = useMemo(() => {
     return projects
       .filter((p) => (p.archived ? showArchived : true))
-      .filter((p) => visibleProjectIds.has(p.id));
-  }, [projects, showArchived, visibleProjectIds]);
+      .filter((p) => !hiddenProjectIds.has(p.id));
+  }, [projects, showArchived, hiddenProjectIds]);
+
+  const projectFilterVisibleIds = useMemo(
+    () => new Set(projects.filter((p) => !hiddenProjectIds.has(p.id)).map((p) => p.id)),
+    [projects, hiddenProjectIds]
+  );
 
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
 
@@ -132,10 +167,11 @@ export default function Timeline({
       tasks.filter(
         (t) =>
           visibleIds.has(t.project_id) &&
-          (!range || taskOverlapsRange(t.start_date, t.end_date, range))
+          (!range || taskOverlapsRange(t.start_date, t.end_date, range)) &&
+          (showCompleted || getTaskStatus(t) !== 'done')
       )
     );
-  }, [tasks, visibleProjects, timelineRangeFilter]);
+  }, [tasks, visibleProjects, timelineRangeFilter, showCompleted]);
 
   const rowsWithDividers = useMemo(() => {
     const groups = visibleTasks.map((task) => {
@@ -153,7 +189,7 @@ export default function Timeline({
   const selectedProject = selectedTask ? projectById.get(selectedTask.project_id) : null;
 
   function toggleProjectVisible(id: string) {
-    setVisibleProjectIds((prev) => {
+    setHiddenProjectIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -177,7 +213,7 @@ export default function Timeline({
           <h1 className="text-lg font-semibold text-white">Project manager</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="mr-1 flex cursor-pointer items-center gap-2 text-sm text-white/85 select-none">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-white/85 select-none">
             <input
               type="checkbox"
               checked={showArchived}
@@ -185,6 +221,15 @@ export default function Timeline({
               className="h-3.5 w-3.5 accent-white"
             />
             Show archived
+          </label>
+          <label className="mr-1 flex cursor-pointer items-center gap-2 text-sm text-white/85 select-none">
+            <input
+              type="checkbox"
+              checked={showCompleted}
+              onChange={(e) => setShowCompleted(e.target.checked)}
+              className="h-3.5 w-3.5 accent-white"
+            />
+            Show completed
           </label>
           <button
             onClick={() => setManageProjectsOpen(true)}
@@ -229,7 +274,7 @@ export default function Timeline({
         </div>
       </header>
 
-      <ProjectFilter projects={projects} visibleIds={visibleProjectIds} onToggle={toggleProjectVisible} />
+      <ProjectFilter projects={projects} visibleIds={projectFilterVisibleIds} onToggle={toggleProjectVisible} />
       <TimelineRangeFilter value={timelineRangeFilter} onChange={setTimelineRangeFilter} />
 
       <div className="flex-1 overflow-auto">
