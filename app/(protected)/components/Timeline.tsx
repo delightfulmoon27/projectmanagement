@@ -12,7 +12,7 @@ import {
   taskOverlapsRange,
   type TimelineRangeFilter as RangeOption,
 } from '@/lib/dates';
-import { getTaskStatus, sortTasks } from '@/lib/scoring';
+import { getTaskStatus, isOverdue, sortTasks } from '@/lib/scoring';
 import type { Project, Task, TaskDependency } from '@/lib/types';
 import GanttRow from './GanttRow';
 import ProjectFilter from './ProjectFilter';
@@ -164,12 +164,15 @@ export default function Timeline({
     const visibleIds = new Set(visibleProjects.map((p) => p.id));
     const range = getTimelineFilterRange(timelineRangeFilter);
     return sortTasks(
-      tasks.filter(
-        (t) =>
-          visibleIds.has(t.project_id) &&
-          (!range || taskOverlapsRange(t.start_date, t.end_date, range)) &&
-          (showCompleted || getTaskStatus(t) !== 'done')
-      )
+      tasks.filter((t) => {
+        if (!visibleIds.has(t.project_id)) return false;
+        if (!showCompleted && getTaskStatus(t) === 'done') return false;
+        if (!range) return true;
+        if (taskOverlapsRange(t.start_date, t.end_date, range)) return true;
+        // "Upcoming" also surfaces overdue-but-still-active tasks that fall entirely
+        // before the window, so a forgotten task doesn't just silently disappear.
+        return timelineRangeFilter === 'upcoming' && isOverdue(t);
+      })
     );
   }, [tasks, visibleProjects, timelineRangeFilter, showCompleted]);
 
